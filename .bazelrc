@@ -1,0 +1,4 @@
+build --@rules_go//go/config:pure=true
+build --compilation_mode=dbg
+
+build:release --compilation_mode=opt

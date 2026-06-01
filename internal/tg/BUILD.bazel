@@ -1,0 +1,8 @@
+load("@rules_go//go:def.bzl", "go_library")
+
+go_library(
+    name = "tg",
+    srcs = glob(["*.go"]),
+    importpath = "github.com/snailbaron/clwnr_bot/internal/tg",
+    visibility = ["//:__subpackages__"],
+)
