@@ -38,11 +38,11 @@ func (u Update) String() string {
 type MessageID int
 
 type Message struct {
-	MessageID MessageID        `json:"message_id"`
-	Text      string           `json:"text"`
-	Chat      Chat             `json:"chat"`
-	From      User             `json:"from"`
-	Entities  *[]MessageEntity `json:"entities"`
+	MessageID MessageID       `json:"message_id"`
+	Text      string          `json:"text"`
+	Chat      Chat            `json:"chat"`
+	From      *User           `json:"from"`
+	Entities  []MessageEntity `json:"entities"`
 }
 
 func (m Message) String() string {

@@ -129,12 +129,8 @@ type ClownerCommand struct {
 }
 
 func (c *Clowner) parseBotCommand(msg *tg.Message) *ClownerCommand {
-	if msg.Entities == nil {
-		return nil
-	}
-
-	slog.Debug("parsing message entities:", "n", len(*msg.Entities))
-	for _, e := range *msg.Entities {
+	slog.Debug("parsing message entities:", "n", len(msg.Entities))
+	for _, e := range msg.Entities {
 		if e.Type != tg.MessageEntityBotCommand {
 			slog.Debug("entity type is not bot_command:", "type", e.Type)
 			continue
@@ -274,7 +270,7 @@ func (c *Clowner) Run() {
 		for _, u := range updates {
 			c.updateOffset = max(c.updateOffset, u.UpdateID+1)
 
-			if u.Message == nil || u.Message.From.IsBot {
+			if u.Message == nil || u.Message.From != nil && u.Message.From.IsBot {
 				continue
 			}
 
