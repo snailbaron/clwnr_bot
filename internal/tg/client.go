@@ -132,20 +132,6 @@ func (c *Client) GetMe() (*User, error) {
 	return user, nil
 }
 
-func (c *Client) GetMyName() (string, error) {
-	r, err := c.postJSON("getMyName", map[string]any{})
-	if err != nil {
-		return "", err
-	}
-
-	botName, err := DecodeResponse[BotName](r)
-	if err != nil {
-		return "", err
-	}
-
-	return botName.Name, nil
-}
-
 func (c *Client) SetMyCommands(cmds []BotCommand) error {
 	_, err := c.postJSON("setMyCommands", map[string]any{
 		"commands": cmds,

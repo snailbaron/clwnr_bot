@@ -68,10 +68,6 @@ type BotCommand struct {
 	Description string `json:"description"`
 }
 
-type BotName struct {
-	Name string `json:"name"`
-}
-
 type User struct {
 	ID       int64  `json:"id"`
 	IsBot    bool   `json:"is_bot"`

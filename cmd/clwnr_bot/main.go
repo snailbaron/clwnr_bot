@@ -5,12 +5,10 @@ import (
 	"fmt"
 	"log"
 	"log/slog"
-	"net"
 	"os"
 )
 
 const (
-	CLWNR_BOT_ENV   = "CLWNR_BOT"
 	CLWNR_TOKEN_ENV = "CLWNR_TOKEN"
 )
 
@@ -20,16 +18,6 @@ func getEnv(env string) (string, error) {
 		return "", fmt.Errorf("set environment variable %q", env)
 	}
 	return value, nil
-}
-
-func localIP() net.IP {
-	conn, err := net.Dial("tcp", "1.1.1.1:80")
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer conn.Close()
-
-	return conn.LocalAddr().(*net.TCPAddr).IP
 }
 
 func main() {
