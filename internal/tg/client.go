@@ -12,12 +12,39 @@ import (
 )
 
 const (
-	CLIENT_TIMEOUT = 30 * time.Second
+	CLIENT_TIMEOUT      = 30 * time.Second
+	RETRY_COUNT         = 3
+	RETRY_DEFAULT_DELAY = 5 * time.Second
 )
 
 type Client struct {
 	client  *http.Client
 	baseURL string
+}
+
+func (c *Client) tryPostJSONBytes(
+	endpoint string, jsonBytes []byte) (*http.Response, *Response, error) {
+
+	r, err := c.client.Post(
+		c.baseURL+"/"+endpoint,
+		"application/json",
+		bytes.NewReader(jsonBytes))
+	if err != nil {
+		return nil, nil, err
+	}
+	defer r.Body.Close()
+
+	respBytes, err := io.ReadAll(r.Body)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	var respStruct Response
+	if err := json.Unmarshal(respBytes, &respStruct); err != nil {
+		return nil, nil, err
+	}
+
+	return r, &respStruct, nil
 }
 
 func (c *Client) postJSON(
@@ -29,37 +56,42 @@ func (c *Client) postJSON(
 	}
 	slog.Debug("sending request:", "endpoint", endpoint, "json", string(jsonBytes))
 
-	resp, err := c.client.Post(
-		c.baseURL+"/"+endpoint,
-		"application/json",
-		bytes.NewReader(jsonBytes))
-	if err != nil {
-		return nil, err
-	}
-	defer resp.Body.Close()
+	for retry := 0; ; retry++ {
+		resp, respStruct, err := c.tryPostJSONBytes(endpoint, jsonBytes)
+		if err != nil {
+			return nil, err
+		}
 
-	respBytes, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return nil, err
-	}
-	slog.Debug("received response:", "data", respBytes)
+		if resp.StatusCode == 429 {
+			delay := RETRY_DEFAULT_DELAY
+			if sec := respStruct.Parameters.RetryAfter; sec > 0 {
+				delay = time.Duration(sec) * time.Second
+			}
 
-	if resp.StatusCode/100 != 2 {
-		return nil, fmt.Errorf("request failed: %s", resp.Status)
-	}
+			if retry < RETRY_COUNT {
+				slog.Warn(
+					"got 429 response, sleeping:",
+					"description", respStruct.Description, "delay", delay)
+				time.Sleep(delay)
+				continue
+			} else {
+				return nil, fmt.Errorf(
+					"request returned 429 after %d retries", RETRY_COUNT)
+			}
+		}
 
-	var respStruct Response
-	if err := json.Unmarshal(respBytes, &respStruct); err != nil {
-		return nil, err
-	}
+		if resp.StatusCode/100 != 2 {
+			return nil, fmt.Errorf("request failed: %s", resp.Status)
+		}
 
-	if !respStruct.OK {
-		return nil, fmt.Errorf(
-			"request failed (error code %d): %s",
-			respStruct.ErrorCode, respStruct.Description)
-	}
+		if !respStruct.OK {
+			return nil, fmt.Errorf(
+				"request failed (error code %d): %s",
+				respStruct.ErrorCode, respStruct.Description)
+		}
 
-	return &respStruct, nil
+		return respStruct, nil
+	}
 }
 
 func (c *Client) post(

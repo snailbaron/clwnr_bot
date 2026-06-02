@@ -49,14 +49,10 @@ func NewSettings() *Settings {
 	}
 }
 
-type MessageToAct struct {
-	ChatID    tg.ChatID
-	MessageID tg.MessageID
-}
-
 const (
-	POLL_TIMEOUT = 15 * time.Second
-	QUEUE_SIZE   = 1000
+	POLL_TIMEOUT           = 15 * time.Second
+	POLL_RETRY_START_DELAY = 3 * time.Second
+	POLL_RETRY_MAX_DELAY   = 5 * time.Minute
 )
 
 type Clowner struct {
@@ -64,9 +60,7 @@ type Clowner struct {
 	tgClient     *tg.Client
 	chatSettings map[tg.ChatID]*Settings
 	rand         *rand.Rand
-
 	updateOffset int
-	messages     chan *MessageToAct
 }
 
 func NewClowner(token string) (*Clowner, error) {
@@ -82,7 +76,6 @@ func NewClowner(token string) (*Clowner, error) {
 		tgClient:     tgClient,
 		chatSettings: make(map[tg.ChatID]*Settings),
 		rand:         rand.New(rand.NewPCG(rand.Uint64(), rand.Uint64())),
-		messages:     make(chan *MessageToAct, QUEUE_SIZE),
 	}, nil
 }
 
@@ -256,11 +249,21 @@ func (c *Clowner) Run() {
 	}
 
 	for {
-		updates, err := c.tgClient.GetUpdatesMessages(
-			c.updateOffset, POLL_TIMEOUT)
-		if err != nil {
-			slog.Error("failed to get updates:", "error", err)
-			continue
+		var updates []tg.Update
+		delay := POLL_RETRY_START_DELAY
+		for {
+			var err error
+			updates, err = c.tgClient.GetUpdatesMessages(
+				c.updateOffset, POLL_TIMEOUT)
+			if err == nil {
+				break
+			}
+
+			slog.Error(
+				"failed to get updates, will retry:",
+				"error", err, "delay", delay)
+			time.Sleep(delay)
+			delay = min(POLL_RETRY_MAX_DELAY, delay+delay)
 		}
 
 		for _, u := range updates {

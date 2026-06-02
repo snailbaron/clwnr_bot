@@ -6,10 +6,11 @@ import (
 )
 
 type Response struct {
-	OK          bool            `json:"ok"`
-	Description string          `json:"description"`
-	ErrorCode   int             `json:"error_code"`
-	Result      json.RawMessage `json:"result"`
+	OK          bool               `json:"ok"`
+	Description string             `json:"description"`
+	ErrorCode   int                `json:"error_code"`
+	Result      json.RawMessage    `json:"result"`
+	Parameters  ResponseParameters `json:"parameters"`
 }
 
 func DecodeResponse[T any](r *Response) (*T, error) {
@@ -20,11 +21,9 @@ func DecodeResponse[T any](r *Response) (*T, error) {
 	return &result, nil
 }
 
-type ResponseWrapperJSON[T any] struct {
-	OK          bool   `json:"ok"`
-	Description string `json:"description"`
-	ErrorCode   int    `json:"error_code"`
-	Result      T      `json:"result"`
+type ResponseParameters struct {
+	MigrateToChatID ChatID `json:"migrate_to_chat_id"`
+	RetryAfter      int    `json:"retry_after"`
 }
 
 type Update struct {
