@@ -98,10 +98,35 @@ func (c *Clowner) getChatSettings(chatID tg.ChatID) *Settings {
 type ClownerCommandType string
 
 const (
-	ClownerCommandP    ClownerCommandType = "p"
-	ClownerCommandStop ClownerCommandType = "stop"
-	ClownerCommandInfo ClownerCommandType = "info"
+	ClownerCommandP       ClownerCommandType = "p"
+	ClownerCommandStop    ClownerCommandType = "stop"
+	ClownerCommandInfo    ClownerCommandType = "info"
+	ClownerCommandReact   ClownerCommandType = "react"
+	ClownerCommandRespond ClownerCommandType = "respond"
 )
+
+var botCommands = []tg.BotCommand{
+	{
+		Command:     string(ClownerCommandP),
+		Description: "Установить уровень клоунения в процентах",
+	},
+	{
+		Command:     string(ClownerCommandStop),
+		Description: "Остановить Клоунщика",
+	},
+	{
+		Command:     string(ClownerCommandInfo),
+		Description: "Показать настройки чата",
+	},
+	{
+		Command:     string(ClownerCommandReact),
+		Description: "Ставить реакцию-клоуна",
+	},
+	{
+		Command:     string(ClownerCommandRespond),
+		Description: "Отвечать сообщениями с клоуном",
+	},
+}
 
 type ClownerCommand struct {
 	MessageID tg.MessageID
@@ -115,10 +140,10 @@ func (c *Clowner) parseBotCommand(msg *tg.Message) *ClownerCommand {
 		return nil
 	}
 
-	slog.Debug("parsing message entities", "n", len(*msg.Entities))
+	slog.Debug("parsing message entities:", "n", len(*msg.Entities))
 	for _, e := range *msg.Entities {
 		if e.Offset != 0 {
-			slog.Debug("entity offset is not zero", "offset", e.Offset)
+			slog.Debug("entity offset is not zero:", "offset", e.Offset)
 			continue
 		}
 
@@ -132,19 +157,19 @@ func (c *Clowner) parseBotCommand(msg *tg.Message) *ClownerCommand {
 
 		commandAndName, found := strings.CutPrefix(commandAndName, "/")
 		if !found {
-			slog.Debug("command does not start with /", "command", commandAndName)
+			slog.Debug("command does not start with /:", "command", commandAndName)
 			continue
 		}
 
 		parts := strings.SplitN(commandAndName, "@", 2)
 		if len(parts) != 2 {
-			slog.Debug("command does not have @", "command", commandAndName)
+			slog.Debug("command does not have @:", "command", commandAndName)
 			continue
 		}
 
 		command, name := parts[0], parts[1]
 		if name != c.botUsername {
-			slog.Debug("foreign bot name",
+			slog.Debug("foreign bot name:",
 				"command", commandAndName,
 				"bot_name", name,
 				"my_name", c.botUsername)
@@ -190,6 +215,12 @@ func (c *Clowner) processCommand(cmd *ClownerCommand, s *Settings) {
 			" * Клоунение %d%%\n"+
 			" * %s",
 			s.PercentClown, clownActionUserDescription(s.Action))
+	case ClownerCommandReact:
+		sendf("Будем реагировать!")
+		s.Action = ClownActionReaction
+	case ClownerCommandRespond:
+		sendf("Будем отвечать!")
+		s.Action = ClownActionResponse
 	default:
 		sendf(
 			"🎪%s🎪 это что-то новенькое! У меня в программе нет такого номера!",
@@ -220,6 +251,10 @@ func (c *Clowner) actToMessage(m *tg.Message, s *Settings) {
 }
 
 func (c *Clowner) Run() {
+	if err := c.tgClient.SetMyCommands(botCommands); err != nil {
+		slog.Error("failed to set my commands:", "error", err)
+	}
+
 	for {
 		updates, err := c.tgClient.GetUpdatesMessages(
 			c.updateOffset, POLL_TIMEOUT)
