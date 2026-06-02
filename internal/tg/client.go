@@ -120,7 +120,7 @@ func (c *Client) GetUpdatesMessages(
 	r, err := c.postJSON("getUpdates", map[string]any{
 		"offset":          offset,
 		"timeout":         int(pollTimeout.Seconds()),
-		"allowed_updates": []string{"messages"},
+		"allowed_updates": []string{"message"},
 	})
 	if err != nil {
 		return nil, err
