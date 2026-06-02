@@ -54,7 +54,7 @@ func (m Message) String() string {
 type MessageEntityType string
 
 const (
-	MessageEntityBotCommand = "bot_command"
+	MessageEntityBotCommand MessageEntityType = "bot_command"
 )
 
 type MessageEntity struct {

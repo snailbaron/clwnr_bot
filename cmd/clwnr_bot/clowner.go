@@ -135,6 +135,11 @@ func (c *Clowner) parseBotCommand(msg *tg.Message) *ClownerCommand {
 
 	slog.Debug("parsing message entities:", "n", len(*msg.Entities))
 	for _, e := range *msg.Entities {
+		if e.Type != tg.MessageEntityBotCommand {
+			slog.Debug("entity type is not bot_command:", "type", e.Type)
+			continue
+		}
+
 		if e.Offset != 0 {
 			slog.Debug("entity offset is not zero:", "offset", e.Offset)
 			continue
