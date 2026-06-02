@@ -193,12 +193,12 @@ func (c *Clowner) processCommand(cmd *ClownerCommand, s *Settings) {
 		percent, err := strconv.Atoi(cmd.Args)
 		if err != nil {
 			sendf(
-				"Мне нужен процент, а %q это не процент, а клоунада!",
+				"Мне нужно целое число, а 🎪%s🎪 это клоунада!",
 				cmd.Args)
 			break
 		}
 
-		percent = max(0, min(100, percent))
+		percent = max(1, min(100, percent))
 		sendf("Ставлю клоунение в %d%%!", percent)
 		s.PercentClown = percent
 	case ClownerCommandStop:
