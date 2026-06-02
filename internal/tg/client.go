@@ -3,6 +3,7 @@ package tg
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"log/slog"
@@ -30,7 +31,11 @@ func (c *Client) tryPostJSONBytes(
 		"application/json",
 		bytes.NewReader(jsonBytes))
 	if err != nil {
-		return nil, nil, err
+		if urlError, ok := errors.AsType[*url.Error](err); ok {
+			return nil, nil, fmt.Errorf(
+				"POST /%s failed: %w", endpoint, urlError.Err)
+		}
+		return nil, nil, fmt.Errorf("POST /%s failed", endpoint)
 	}
 	defer r.Body.Close()
 
@@ -54,7 +59,7 @@ func (c *Client) postJSON(
 	if err != nil {
 		return nil, err
 	}
-	slog.Debug("sending request:", "endpoint", endpoint, "json", string(jsonBytes))
+	slog.Debug("sending request:", "endpoint", endpoint)
 
 	for retry := 0; ; retry++ {
 		resp, respStruct, err := c.tryPostJSONBytes(endpoint, jsonBytes)
