@@ -81,7 +81,9 @@ func (c *Client) postJSON(
 		}
 
 		if resp.StatusCode/100 != 2 {
-			return nil, fmt.Errorf("request failed: %s", resp.Status)
+			return nil, fmt.Errorf(
+				"request failed: status=%q, error_code=%d, description=%q",
+				resp.Status, respStruct.ErrorCode, respStruct.Description)
 		}
 
 		if !respStruct.OK {
