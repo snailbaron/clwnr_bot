@@ -59,7 +59,6 @@ type Clowner struct {
 	botUsername  string
 	tgClient     *tg.Client
 	chatSettings map[tg.ChatID]*Settings
-	rand         *rand.Rand
 	updateOffset int
 }
 
@@ -75,7 +74,6 @@ func NewClowner(token string) (*Clowner, error) {
 		botUsername:  botUser.Username,
 		tgClient:     tgClient,
 		chatSettings: make(map[tg.ChatID]*Settings),
-		rand:         rand.New(rand.NewPCG(rand.Uint64(), rand.Uint64())),
 	}, nil
 }
 
@@ -224,7 +222,7 @@ func (c *Clowner) processCommand(cmd *ClownerCommand, s *Settings) {
 
 func (c *Clowner) mustClown(s *Settings) bool {
 	p := float64(s.PercentClown) / 100
-	return c.rand.Float64() < p
+	return rand.Float64() < p
 }
 
 func (c *Clowner) actToMessage(m *tg.Message, s *Settings) {
